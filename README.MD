@@ -31,7 +31,7 @@ docker-compose up
 
 2. Seed some data into the DB (no time to implement proper seeding mechanism...):
 ```bash
-cd e2e && psql -e --set ON_ERROR_STOP=on -h "localhost" -U "postgres" -d "postgres" -p "5432" -f seed.sql
+cd e2e && export PGPASSWORD="postgres" && psql -e --set ON_ERROR_STOP=on -h "localhost" -U "postgres" -d "postgres" -p "5432" -f seed.sql
 ```
 
 3. Get access token:

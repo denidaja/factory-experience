@@ -1,5 +1,5 @@
 const API_URL = 'http://localhost/api/v1';
-const BEARER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InVzZXIwQGV4YW1wbGUuY29tIiwiaWQiOiJkMmExNjI5OC03ZGQxLTRhNjItYjEzZC1iNGQ2YWQ5MjhmOTQiLCJyb2xlcyI6IjEiLCJpYXQiOjE3MDk2MjIwMTUsImV4cCI6MTcxMDIyNjgxNX0.mMlFdd_dBGWPoCHAfFhGvD4ICoenm6WNSoH9GIgjLNA'
+const BEARER_TOKEN = '<TOKEN>'
 
 export const fetchSupportRequests = async () => {
     const response = await fetch(`${API_URL}/support-requests?includeDetails=true`, {
