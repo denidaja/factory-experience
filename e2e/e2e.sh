@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Function to get auth token given email and password
 get_auth_token() {
   local email=$1
   local password=$2
@@ -15,17 +14,15 @@ get_auth_token() {
   echo $response | jq -r '.access_token'
 }
 
-# Login with two users, get access tokens
+# We'll do the test with two users in parallel
 authToken1=$(get_auth_token "user0@example.com" "1234")
 authToken2=$(get_auth_token "user1@example.com" "1234")
 
-# Function to send volunteer submission request
 send_volunteer_submission() {
   local authToken=$1
   local supportRequestId=$2
   local outputFile=$3
 
-  # Use curl to post volunteer submission and capture response in a file
   curl --request POST \
     --url http://localhost/api/v1/volunteer-submissions \
     --header "Authorization: Bearer $authToken" \
@@ -45,14 +42,11 @@ pid1=$!
 send_volunteer_submission "$authToken2" "$supportRequestId" "$tempFile2" &
 pid2=$!
 
-# Wait for both parallel processes to finish
 wait $pid1
 wait $pid2
 
-# Output responses
 echo "Response 1: $(cat $tempFile1)"
 echo "Response 2: $(cat $tempFile2)"
 
-# Cleanup temporary files
 rm "$tempFile1"
 rm "$tempFile2"
