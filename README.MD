@@ -29,7 +29,7 @@ graph LR
 docker-compose up
 ```
 
-2. Seed some data into the DB (no time to implement proper seeding mechanism...):
+2. Seed initial data into the DB (no time to implement proper seeding through TypeORM...):
 ```bash
 cd e2e && export PGPASSWORD="postgres" && psql -e --set ON_ERROR_STOP=on -h "localhost" -U "postgres" -d "postgres" -p "5432" -f seed.sql
 ```
@@ -41,7 +41,7 @@ curl -X POST http://localhost/api/v1/auth/login \
      -d '{"email": "user0@example.com", "password": "1234"}'
 ```
 
-and paste the token in `frontend/src/pages/volunteer-submission/volunteer-submission.service.ts` at line 2: `const BEARER_TOKEN=<>`
+and paste the token [here](frontend/src/pages/volunteer-submission/volunteer-submission.service.ts), line 2: `const BEARER_TOKEN=<>`
 
 4. Access the frontend at `http://localhost:8080` - or play around with the [APIs](http://localhost/swagger)
 
@@ -50,6 +50,9 @@ and paste the token in `frontend/src/pages/volunteer-submission/volunteer-submis
 ## Backend Design
 
 ### Database
+
+One assumption made for this task is that the system is single-tenant (single factory).  
+In a real-world scenario, the system would probably be multi-tenant where we could use db-per-tenant, schema-per-tenant, or row-level security approach to separate data.
 
 ![db-design](docs/db-schema.png)
 
@@ -64,7 +67,7 @@ Two applications structures were considered for this project:
 1. **Module per entity** - provides clearer separation of concern, but leading to more boilerplate code and tight coupling between closely-related modules
 1. **Modules per domain** - (DDD/bounded-context approach) brings more simplicity in handling closely related data (less inter-module dependencies), but can lead to a bloated modules
 
-> **Due to the small scope and size of the project, approach 1) was selected.**
+**Due to the small scope and size of the project, approach 1) was selected.**
 
 > The following diagram shows the module dependencies:
 
@@ -86,7 +89,7 @@ graph LR;
 1. `Users Module` - Handles user-related operations such as user registration and login
 1. `Auth Module` - Handles authentication and authorization, using PassportJS for implementing strategies for user registration (local strategy) and login (JWT strategy). It also provides guards and decorators for route protection and whitelisting
 1. `Shifts Module` - Handles operations related to work shifts, such as creating, listing, and updating shifts
-1. `SupportRequests Module` - Handles the creation of support requests. Additionally, exposes API endpoint that frontend uses to list support requests in a denormalized view - this is done by interacting with Shifts and VolunteerSubmissions repositories directly for faster implementation, but using corresponding modules/services would be the right way.
+1. `SupportRequests Module` - Handles the creation of support requests. Additionally, exposes API endpoint that frontend uses to list support requests in a denormalized view - this is done by interacting with Shifts and VolunteerSubmissions repositories directly for faster implementation, but using corresponding modules/services would be a preferred approach
 1. `VolunteerSubmissions Module` - Handles volunteer submissions to support requests and exposes management endpoints (e.g: confirm attendance). Exposes `POST /volunteer-submissions` endpoint that frontend uses to book a slot in particular volunteer request
 
 ### API Endpoints
@@ -109,11 +112,11 @@ To address this issue, two approaches were considered:
 * We wrap the logic of (`get support_request limit ->  calculate current_count -> persist if OK`) in a transaction, and use a `pessimistic_write` lock on the initial `support_request` row read. This approach makes sure that concurrent transactions cannot read the same `support_request` concurrently, and therefore achieving (theoretical, no time for fully testing) serializability.
 
 **Optimistic**
-* We again use the counting logic, but we don't use transactions and/or locking. Overbookings can happen, but once a day in a CRON we can check for overbookings and delete latest volunteer_submission.
+* We again use the counting logic, but we don't use transactions and/or locking. Overbookings can happen, but once a day in a CRON we can check for overbookings and delete latest `volunteer_submission`.
 
-> In this demo a pessimistic approach was implemented.
+**In this demo a pessimistic approach was implemented.**
 
-> [Sample E2E Test](./e2e/e2e.sh) - this file implements a simple e2e test that demonstrates the handling of overbooking
+> [Sample E2E Test](./e2e/e2e.sh) - this file implements a simple E2E test that demonstrates how the system deals with overbooking
 
 #### API Protection and Authorization
 
@@ -168,8 +171,8 @@ Iteration 2: Enhanced Features
 - **UI for Line Managers**: Allow for line-managers to create/manage shifts and support requests
 - **Fine-Grained Work Specifications**: Allow for detailed requirements specification for each shift
 - **Volunteer Feedback**: Implement a mechanism for feedback from volunteers post-shift
-- **Improve Implementation**: Pagination/filtering/searching/sorting, use TypeORM migrations and seeds, implement observability (logging, metrics, alerts), improve OAS specification etc. 
-- **Prepare for Production**: Connect with infra to provision needs (Hashicorp Vault, DB, CDN, EKS, Prometheus, Grafana, ELK etc.), implement K8s/Helm charts for deployment, implement CI/CD pipeline, feature flags, increase test coverage etc.
+- **Improve Implementation**: Pagination/filtering/searching/sorting, use of TypeORM BaseEntity, migrations and seeds, implement observability (logging, metrics, alerts), more extended OAS specification etc. 
+- **Prepare for Production**: Sync with infra teams to provision infra needs (Hashicorp Vault, managed DB, CDN, EKS, Prometheus, Grafana, ELK etc.), implement K8s/Helm charts for deployment, implement CI/CD pipeline, feature flags, increase test coverage etc.
 
 Iteration 3: Optimization and Scaling
 - **Reporting Tools**: For HR and senior management to track participation and impact
@@ -199,8 +202,8 @@ Metrics:
 - **Scalability**: The system must be able to scale (auto-scale) to accommodate all employees and shifts without performance degradation
 - **Availability**: The system should have high availability, especially during peak usage times (SLA of 99.9% should be enough)
 - **Response Time and Correctness**: The system should provide quick feedback to user actions, with API responses and page loads taking no longer than 2 seconds while achieving correctness (no overbookings)
-- **Disaster Recovery**: The interface should be user-friendly to encourage adoption
-- **Usability**: Regular, automated backups of the database and essential system configurations must be implemented for minimal data loss
+- **Usability**: The interface should be user-friendly to encourage adoption
+- **Disaster Recovery**: Regular, automated backups of the database and essential system configurations must be implemented for minimal data loss
 - **Security**: Ensure data privacy and protection against unauthorized access
 
 2. How would you measure the success of the system in general?
